@@ -1,0 +1,49 @@
+#WSOL
+[[pools]]
+mint = "So11111111111111111111111111111111111111112"
+raydium_amm = [
+	"Bzc9NZfMqkXR6fz1DBph7BDf9BroyEf6pnzESP7v5iiw",
+	"FRhB8L7Y9Qq41qZXYLtC2nw8An1RJfLLxRF2x9RwLLMo",
+	"EP2ib6dYdEeqD8MfE2ezHCxX3kP3K2eLKkirfPm5eyMx"
+]
+raydium_clmm = [
+	"6U4TBh3aJgiJ5EqCDEua4rP75HsqcfHapMKhhyuTqGuo",
+	"FdjBRWXzieV1Qtn8FLDWWk2HK1HSQWYduo8y4F1e8GWu",
+	"43xBeK8mZtssDjFLdrpr2muH5AYQJRVFb22y5rHvfo9C",
+	"dgfJKacfubDGfX3mhEk1JKaK9qx38SpLzM2wNdgX2fD",
+	"4mMDQ5kG9fFrBSQeedErsUoTBhY5KKnsKWGvenXRTwSy"
+]
+
+#Fartcoin
+[[pools]]
+mint = "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"
+raydium_amm = [
+	"Bzc9NZfMqkXR6fz1DBph7BDf9BroyEf6pnzESP7v5iiw"
+]
+raydium_clmm = [
+	"6U4TBh3aJgiJ5EqCDEua4rP75HsqcfHapMKhhyuTqGuo",
+	"FdjBRWXzieV1Qtn8FLDWWk2HK1HSQWYduo8y4F1e8GWu"
+]
+
+#POPCAT
+[[pools]]
+mint = "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"
+raydium_amm = [
+	"FRhB8L7Y9Qq41qZXYLtC2nw8An1RJfLLxRF2x9RwLLMo"
+]
+raydium_clmm = [
+	"43xBeK8mZtssDjFLdrpr2muH5AYQJRVFb22y5rHvfo9C",
+	"dgfJKacfubDGfX3mhEk1JKaK9qx38SpLzM2wNdgX2fD",
+	"5XyfteL4v31yugoCZXDQ9EKGRboCDyT38MmLos6R2DF1"
+]
+
+#WIF
+[[pools]]
+mint = "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm"
+raydium_amm = [
+	"EP2ib6dYdEeqD8MfE2ezHCxX3kP3K2eLKkirfPm5eyMx"
+]
+raydium_clmm = [
+	"5XyfteL4v31yugoCZXDQ9EKGRboCDyT38MmLos6R2DF1",
+	"4mMDQ5kG9fFrBSQeedErsUoTBhY5KKnsKWGvenXRTwSy"
+]
