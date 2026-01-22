@@ -10,6 +10,9 @@ mod arb;
 
 use config::Config;
 use crate::arb::build_arbitrage_graph;
+use crate::dex::PoolMints;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 fn main() {
     env_logger::init();
@@ -20,9 +23,18 @@ fn main() {
     let rpc_url = "https://api.mainnet-beta.solana.com";
     let client = RpcClient::new(rpc_url.to_string());
 
+    let pools_map: HashMap<Pubkey, Vec<Arc<dyn PoolMints>>>;
     // Строим HashMap пулов по mint-адресам
-    let pools_map = cfg.build_pools_hashmap(&client).expect("Failed to build pools hashmap");
-    println!("Built pools hashmap with {} mint entries", pools_map.len());
+    match cfg.build_pools_hashmap(&client) {
+        Ok(_pools_map) => {
+            println!("Built pools hashmap with {} mint entries", _pools_map.len());
+            pools_map = _pools_map;
+        }
+        Err(e) => {
+            println!("Error building pools hashmap: {}", e);
+            return;
+        }
+    }
 
     // Хардкодные значения для построения графа арбитража
     let start_mint: Pubkey = "So11111111111111111111111111111111111111112".parse().expect("Invalid start_mint");

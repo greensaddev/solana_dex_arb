@@ -6,6 +6,7 @@ use solana_sdk::pubkey::Pubkey;
 use crate::dex::PoolMints;
 use crate::dex::raydium::amm::RaydiumAmmPoolInfo;
 use crate::dex::raydium::clmm::RaydiumClmmPoolInfo;
+use crate::dex::meteora::dlmm::MeteoraDlmmPoolInfo;
 
 #[derive(Debug, Deserialize)]
 pub struct PoolConfig {
@@ -14,6 +15,8 @@ pub struct PoolConfig {
     pub raydium_amm: Vec<String>,
     #[serde(default)]
     pub raydium_clmm: Vec<String>,
+    #[serde(default)]
+    pub meteora_dlmm: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,7 +33,7 @@ impl Config {
 
     /// Строит HashMap, где ключ - mint адрес, значение - вектор указателей на объекты трейта PoolMints
     /// 
-    /// Структура конфига: для каждого mint указываются списки пулов разных типов (raydium_amm, raydium_clmm)
+    /// Структура конфига: для каждого mint указываются списки пулов разных типов (raydium_amm, raydium_clmm, meteora_dlmm)
     pub fn build_pools_hashmap(
         &self,
         client: &RpcClient,
@@ -53,6 +56,13 @@ impl Config {
                 let pool_pubkey: Pubkey = clmm_address.parse()?;
                 let clmm_pool = RaydiumClmmPoolInfo::create(pool_pubkey, client)?;
                 pools_for_mint.push(Arc::new(clmm_pool));
+            }
+
+            // Создаем DLMM пулы
+            for dlmm_address in &pool_config.meteora_dlmm {
+                let pool_pubkey: Pubkey = dlmm_address.parse()?;
+                let dlmm_pool = MeteoraDlmmPoolInfo::create(pool_pubkey, client)?;
+                pools_for_mint.push(Arc::new(dlmm_pool));
             }
 
             // Добавляем все пулы для данного mint в HashMap

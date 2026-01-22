@@ -13,6 +13,12 @@ raydium_clmm = [
 	"dgfJKacfubDGfX3mhEk1JKaK9qx38SpLzM2wNdgX2fD",
 	"4mMDQ5kG9fFrBSQeedErsUoTBhY5KKnsKWGvenXRTwSy"
 ]
+meteora_dlmm = [
+	"6wJ7W3oHj7ex6MVFp2o26NSof3aey7U8Brs8E371WCXA",
+	"BhjvwZoCir2jqVrdGemebDFmTeMW3eENFrxYffkPfj1Y",
+	"EbLiu3GfBYh9cfxrdrfhQgbZJmXqch38NmzZKZSkFGGq",
+	"8Ve9KtGNtLRxCQNAVfkHEP5GRZHjdj6BjB1RQFZewG6V"
+]
 
 #Fartcoin
 [[pools]]
@@ -23,6 +29,11 @@ raydium_amm = [
 raydium_clmm = [
 	"6U4TBh3aJgiJ5EqCDEua4rP75HsqcfHapMKhhyuTqGuo",
 	"FdjBRWXzieV1Qtn8FLDWWk2HK1HSQWYduo8y4F1e8GWu"
+]
+meteora_dlmm = [
+	"6wJ7W3oHj7ex6MVFp2o26NSof3aey7U8Brs8E371WCXA",
+	"BhjvwZoCir2jqVrdGemebDFmTeMW3eENFrxYffkPfj1Y",
+	"4g9NkVnQ2tHeuWpCavYGmiizRFawwrsq8TFkB8adieDh"
 ]
 
 #POPCAT
@@ -36,6 +47,11 @@ raydium_clmm = [
 	"dgfJKacfubDGfX3mhEk1JKaK9qx38SpLzM2wNdgX2fD",
 	"5XyfteL4v31yugoCZXDQ9EKGRboCDyT38MmLos6R2DF1"
 ]
+meteora_dlmm = [
+	"4g9NkVnQ2tHeuWpCavYGmiizRFawwrsq8TFkB8adieDh",
+	"EbLiu3GfBYh9cfxrdrfhQgbZJmXqch38NmzZKZSkFGGq",
+	"EU8YtYsjPJbpzasYvpFNsM7peN9pUnHw6oErqjjAbAKZ"
+]
 
 #WIF
 [[pools]]
@@ -46,4 +62,8 @@ raydium_amm = [
 raydium_clmm = [
 	"5XyfteL4v31yugoCZXDQ9EKGRboCDyT38MmLos6R2DF1",
 	"4mMDQ5kG9fFrBSQeedErsUoTBhY5KKnsKWGvenXRTwSy"
+]
+meteora_dlmm = [
+	"EU8YtYsjPJbpzasYvpFNsM7peN9pUnHw6oErqjjAbAKZ",
+	"8Ve9KtGNtLRxCQNAVfkHEP5GRZHjdj6BjB1RQFZewG6V"
 ]

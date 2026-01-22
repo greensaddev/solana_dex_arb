@@ -1,14 +1,15 @@
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
-use log::{info, debug};
+use log::debug;
 
-use crate::common::{read_mint_decimals, read_spl_amount};
+use crate::common::{read_spl_amount, read_u64};
 use crate::dex::PoolMints;
 
 const BASE_VAULT_OFFSET: usize = 336; // coinVault/tokenVaultA
 const QUOTE_VAULT_OFFSET: usize = 368; // pcVault/tokenVaultB
 const BASE_MINT_OFFSET: usize = 400; // coinMint/tokenMintA
 const QUOTE_MINT_OFFSET: usize = 432; // pcMint/tokenMintB
+const FEES_OFFSET: usize = 128; // fees struct starts after sys_decimal_value (offset 128 + 8 bytes)
 
 #[allow(unused)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -33,6 +34,20 @@ pub struct Fees {
     pub swap_fee_numerator: u64,
     /// denominator of the swap_fee
     pub swap_fee_denominator: u64,
+}
+
+/// Чтение структуры Fees из бинарных данных аккаунта
+fn read_fees(data: &[u8]) -> Fees {
+    Fees {
+        min_separate_numerator: read_u64(data, FEES_OFFSET),
+        min_separate_denominator: read_u64(data, FEES_OFFSET + 8),
+        trade_fee_numerator: read_u64(data, FEES_OFFSET + 16),
+        trade_fee_denominator: read_u64(data, FEES_OFFSET + 24),
+        pnl_numerator: read_u64(data, FEES_OFFSET + 32),
+        pnl_denominator: read_u64(data, FEES_OFFSET + 40),
+        swap_fee_numerator: read_u64(data, FEES_OFFSET + 48),
+        swap_fee_denominator: read_u64(data, FEES_OFFSET + 56),
+    }
 }
 
 #[allow(unused)]
@@ -143,16 +158,29 @@ pub struct AmmInfo {
     pub padding2: u64,
 }
 
+pub trait CheckedCeilDiv: Sized {
+    /// Perform ceiling division
+    fn checked_ceil_div(&self, rhs: Self) -> Option<Self>;
+}
+
+impl CheckedCeilDiv for u128 {
+    fn checked_ceil_div(&self, rhs: Self) -> Option<Self> {
+        let mut quotient = self.checked_div(rhs)?;
+        let remainder = self.checked_rem(rhs)?;
+        if remainder != 0 {
+            quotient = quotient.checked_add(1)?;
+        }
+        Some(quotient)
+    }
+}
+
 pub struct RaydiumAmmPoolInfo {
     pub pubkey : Pubkey,
     pub base_vault: Pubkey,
     pub quote_vault: Pubkey,
     base_mint: Pubkey,
     quote_mint: Pubkey,
-    pub base_decimals : u8,
-    pub quote_decimals : u8,
-    /// Торговая комиссия пула в basis points (например, 25 = 0.25%)
-    pub fee_rate_bps: u16,
+    pub fees: Fees,
 }
 
 impl PoolMints for RaydiumAmmPoolInfo {
@@ -189,11 +217,16 @@ impl PoolMints for RaydiumAmmPoolInfo {
         let base_raw = read_spl_amount(&base_vault_acc) as u128;
         let quote_raw = read_spl_amount(&quote_vault_acc) as u128;
 
-        let fee_bps = self.fee_rate_bps as u128;
         let amount_in_u128 = amount_in as u128;
 
+        let swap_fee = amount_in_u128
+            .checked_mul(self.fees.swap_fee_numerator.into())
+            .unwrap()
+            .checked_ceil_div(self.fees.swap_fee_denominator.into())
+            .unwrap();
+
         // Комиссия снимается из amount_in
-        let amount_in_after_fee = amount_in_u128 * (10_000u128 - fee_bps) / 10_000u128;
+        let amount_in_after_fee = amount_in_u128.saturating_sub(swap_fee);
 
         let (reserve_in, reserve_out) = if *token_in == *self.mint_a() {
             (base_raw, quote_raw)
@@ -227,20 +260,12 @@ impl RaydiumAmmPoolInfo {
         let quote_mint = Pubkey::new_from_array(
             account.data[QUOTE_MINT_OFFSET..QUOTE_MINT_OFFSET + 32].try_into().unwrap());  // offset mintB
 
-        let base_mint_acc = client.get_account(&base_mint)?;
-        let quote_mit_acc = client.get_account(&quote_mint)?;
-
-        let base_decimals = read_mint_decimals(&base_mint_acc) as u8;
-        let quote_decimals = read_mint_decimals(&quote_mit_acc) as u8;
-
-        // Пока используем типичное значение комиссии Raydium AMM:
-        // 0.25% = 25 bps. При необходимости можно прочитать точное значение
-        // из конфигурационного аккаунта пула.
-        let fee_rate_bps: u16 = 25;
+        // Читаем структуру Fees из данных аккаунта
+        let fees = read_fees(&account.data);
 
         debug!(
-            "Parsed AMM Pool: \n\tmintA={}, \n\tmintB={}, \n\tvaultA={}, \n\tvaultB={}",
-            base_mint, quote_mint, base_vault, quote_vault
+            "Parsed AMM Pool: \n\tmintA={}, \n\tmintB={}, \n\tvaultA={}, \n\tvaultB={}, \n\tfees={:?}",
+            base_mint, quote_mint, base_vault, quote_vault, fees
         );
 
         Ok(Self {
@@ -249,9 +274,62 @@ impl RaydiumAmmPoolInfo {
             quote_vault,
             base_mint,
             quote_mint,
-            base_decimals,
-            quote_decimals,
-            fee_rate_bps,
+            fees,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_client::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_amm_pool_fees_and_amount_out() {
+        // Инициализация логгера для теста
+        let _ = env_logger::try_init();
+
+        // Захардкоженный адрес Raydium AMM пула (WSOL/USDC пул)
+        let pool_address_str = "Bzc9NZfMqkXR6fz1DBph7BDf9BroyEf6pnzESP7v5iiw";
+        let pool_pubkey = Pubkey::from_str(pool_address_str).expect("Invalid pool address");
+
+        // Подключаемся к RPC
+        let rpc_url = "https://api.mainnet-beta.solana.com";
+        let client = RpcClient::new(rpc_url.to_string());
+
+        // Создаем RaydiumAmmPoolInfo
+        let pool_info = RaydiumAmmPoolInfo::create(pool_pubkey, &client)
+            .expect("Failed to create pool info");
+
+        // Выводим полученную структуру Fees
+        println!("Fees structure:");
+        println!("  min_separate_numerator: {}", pool_info.fees.min_separate_numerator);
+        println!("  min_separate_denominator: {}", pool_info.fees.min_separate_denominator);
+        println!("  trade_fee_numerator: {}", pool_info.fees.trade_fee_numerator);
+        println!("  trade_fee_denominator: {}", pool_info.fees.trade_fee_denominator);
+        println!("  pnl_numerator: {}", pool_info.fees.pnl_numerator);
+        println!("  pnl_denominator: {}", pool_info.fees.pnl_denominator);
+        println!("  swap_fee_numerator: {}", pool_info.fees.swap_fee_numerator);
+        println!("  swap_fee_denominator: {}", pool_info.fees.swap_fee_denominator);
+
+        // Захардкоженное значение amount_in (например, 1 SOL = 1_000_000_000 lamports)
+        let amount_in: u64 = 1_000_000_000;
+
+        // Вычисляем amount_out для свопа base_mint -> quote_mint
+        let amount_out = pool_info.amount_out(&client, amount_in, pool_info.mint_b())
+            .expect("Failed to calculate amount_out");
+
+        let swap_fee = (amount_in as u128)
+            .checked_mul(pool_info.fees.swap_fee_numerator.into())
+            .unwrap()
+            .checked_ceil_div(pool_info.fees.swap_fee_denominator.into())
+            .unwrap();
+
+        println!("\nSwap calculation:");
+        println!("  amount_in: {} (base token)", amount_in);
+        println!("  amount_out: {} (quote token)", amount_out);
+        println!("  swap_fee: {}", swap_fee);
     }
 }

@@ -382,7 +382,7 @@ fn read_clmm_fee_rate_bps(
 
     // Правильный offset для trade_fee_rate (u32) в структуре AmmConfig
     // discriminator (8) + bump (1) + index (2) + owner (32) + protocol_fee_rate (4) = 47
-    const TRADE_FEE_RATE_OFFSET: usize = 47;
+    const TRADE_FEE_RATE_OFFSET: usize = 39;
     if data.len() >= TRADE_FEE_RATE_OFFSET + 4 {
         let raw: [u8; 4] = data[TRADE_FEE_RATE_OFFSET..TRADE_FEE_RATE_OFFSET + 4].try_into()?;
         let trade_fee_rate_u32 = u32::from_le_bytes(raw);
@@ -396,14 +396,3 @@ fn read_clmm_fee_rate_bps(
     }
 }
 
-/// Основная функция для получения информации о CLMM-пуле.
-pub fn get_info_clmm(
-    client: &RpcClient,
-    pool_key: &str,
-) -> Result<RaydiumClmmPoolInfo, Box<dyn std::error::Error>> {
-    let pool_pubkey: Pubkey = pool_key.parse()?;
-    debug!("Fetching Raydium CLMM pool {}", pool_pubkey);
-
-    let pool_info = RaydiumClmmPoolInfo::create(pool_pubkey, client)?;
-    Ok(pool_info)
-}

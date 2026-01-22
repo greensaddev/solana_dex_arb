@@ -1,4 +1,5 @@
 pub mod raydium;
+pub mod meteora;
 
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
