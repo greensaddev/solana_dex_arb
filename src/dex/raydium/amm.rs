@@ -246,6 +246,7 @@ impl PoolMints for RaydiumAmmPoolInfo {
     }
 }
 
+// Комментарий
 impl RaydiumAmmPoolInfo {
     /// Создать из бинарных данных аккаунта
     pub fn create(pool_pubkey: Pubkey, client: &RpcClient) -> Result<Self, Box<dyn std::error::Error>> {
