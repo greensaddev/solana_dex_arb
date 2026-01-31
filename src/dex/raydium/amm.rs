@@ -11,6 +11,12 @@ const BASE_MINT_OFFSET: usize = 400; // coinMint/tokenMintA
 const QUOTE_MINT_OFFSET: usize = 432; // pcMint/tokenMintB
 const FEES_OFFSET: usize = 128; // fees struct starts after sys_decimal_value (offset 128 + 8 bytes)
 
+/*
+В структуре Raydium AMM pnl_fee (комиссия протокола) берется не от всей суммы транзакции, а от уже начисленной торговой комиссии (trade_fee).
+В Raydium v4 значения trade_fee_numerator и swap_fee_numerator обычно идентичны (как в вашем случае — 25).
+trade_fee — общая комиссия.
+swap_fee — используется в коде для проверки минимального остатка, но фактически для пользователя итоговая потеря составляет именно 0.25%. */
+
 #[allow(unused)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Fees {

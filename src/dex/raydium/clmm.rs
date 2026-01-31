@@ -6,6 +6,10 @@ use log::{info, debug};
 use crate::common::read_mint_decimals;
 use crate::dex::PoolMints;
 
+/* Trade Fee Rate: 500 Расчет: 
+trade_fee_rate (например 500) / 1,000,000=0.0005 (или 0.05%). 
+Это общая комиссия за своп. */
+
 #[derive(Default, Debug)]
 pub struct AmmConfig {
     /// Bump to identify PDA
@@ -396,3 +400,94 @@ fn read_clmm_fee_rate_bps(
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_client::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    // #[test]
+    // fn test_amm_pool_fees_and_amount_out() {
+    //     // Инициализация логгера для теста
+    //     let _ = env_logger::try_init();
+
+    //     // Захардкоженный адрес Raydium AMM пула (WSOL/USDC пул)
+    //     let pool_address_str = "Bzc9NZfMqkXR6fz1DBph7BDf9BroyEf6pnzESP7v5iiw";
+    //     let pool_pubkey = Pubkey::from_str(pool_address_str).expect("Invalid pool address");
+
+    //     // Подключаемся к RPC
+    //     let rpc_url = "https://api.mainnet-beta.solana.com";
+    //     let client = RpcClient::new(rpc_url.to_string());
+
+    //     // Создаем RaydiumAmmPoolInfo
+    //     let pool_info = RaydiumClmmPoolInfo::create(pool_pubkey, &client)
+    //         .expect("Failed to create pool info");
+
+    //     // Выводим полученную структуру Fees
+    //     println!("Fees structure:");
+    //     println!("  amm_config: {}", pool_info.amm_config.to_string());
+    //     println!("  min_separate_denominator: {}", pool_info.fees.min_separate_denominator);
+    //     println!("  trade_fee_numerator: {}", pool_info.fees.trade_fee_numerator);
+    //     println!("  trade_fee_denominator: {}", pool_info.fees.trade_fee_denominator);
+    //     println!("  pnl_numerator: {}", pool_info.fees.pnl_numerator);
+    //     println!("  pnl_denominator: {}", pool_info.fees.pnl_denominator);
+    //     println!("  swap_fee_numerator: {}", pool_info.fees.swap_fee_numerator);
+    //     println!("  swap_fee_denominator: {}", pool_info.fees.swap_fee_denominator);
+
+    //     // Захардкоженное значение amount_in (например, 1 SOL = 1_000_000_000 lamports)
+    //     let amount_in: u64 = 1_000_000_000;
+
+    //     // Вычисляем amount_out для свопа base_mint -> quote_mint
+    //     // Выходное количество без учета запятой. Она не нужна при расчете арбитража
+    //     let amount_out = pool_info.amount_out(&client, amount_in, pool_info.mint_a())
+    //         .expect("Failed to calculate amount_out");
+
+    //     let swap_fee = pool_info.calc_swap_fee(amount_in).expect("Can't calc swap fee");
+
+    //     println!("\nSwap calculation:");
+    //     println!("  amount_in: {} (base token)", amount_in);
+    //     println!("  amount_out: {} (quote token)", amount_out);
+    //     println!("  swap_fee: {}", swap_fee);
+    // }
+
+
+    #[test]
+    fn get_clmm_pool_amm_config_info() {
+        // Инициализация логгера для теста
+        let _ = env_logger::try_init();
+
+        // Захардкоженный адрес Raydium AMM пула (WSOL/USDC пул)
+        let pool_address_str = "6U4TBh3aJgiJ5EqCDEua4rP75HsqcfHapMKhhyuTqGuo";
+        let pool_pubkey = Pubkey::from_str(pool_address_str).expect("Invalid pool address");
+
+        // Подключаемся к RPC
+        let rpc_url = "https://api.mainnet-beta.solana.com";
+        let client = RpcClient::new(rpc_url.to_string());
+
+        // Создаем RaydiumAmmPoolInfo
+        let pool_info = RaydiumClmmPoolInfo::create(pool_pubkey, &client)
+            .expect("Failed to create pool info");
+
+        let acc = client.get_account(&pool_info.amm_config).unwrap();
+        let data = acc.data;
+
+        // Выводим полученную структуру AmmConfig
+        println!("AmmConfig+ structure:");
+        println!("  amm_config: {}", pool_info.amm_config.to_string());
+        let mut offset = 11;
+        println!("  owner: {}", Pubkey::new_from_array(data[offset .. offset + 32].try_into().unwrap()).to_string());
+        offset += 32;
+        println!("  protocol_fee_rate: {}", u32::from_le_bytes(data[offset .. offset + 4].try_into().unwrap()));
+        offset += 4;
+        println!("  trade_fee_rate: {}", u32::from_le_bytes(data[offset .. offset + 4].try_into().unwrap()));
+        offset += 4;
+        println!("  tick_spacing: {}", u16::from_le_bytes(data[offset .. offset + 2].try_into().unwrap()));
+        offset += 2;
+        println!("  fund_fee_rate: {}", u32::from_le_bytes(data[offset .. offset + 4].try_into().unwrap()));
+        offset += 4;
+        println!("  padding_u32: {}", u32::from_le_bytes(data[offset .. offset + 4].try_into().unwrap()));
+        offset += 4;
+        println!("  owner: {}", Pubkey::new_from_array(data[offset .. offset + 32].try_into().unwrap()).to_string());
+    }
+}
