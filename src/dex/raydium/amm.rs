@@ -278,6 +278,16 @@ impl RaydiumAmmPoolInfo {
             fees,
         })
     }
+
+    pub fn calc_swap_fee(&self, amount_in: u64) -> Result<u64, Box<dyn std::error::Error>> {
+        let swap_fee = (amount_in as u128)
+            .checked_mul(self.fees.swap_fee_numerator.into())
+            .unwrap()
+            .checked_ceil_div(self.fees.swap_fee_denominator.into())
+            .unwrap() as u64;
+
+        Ok(swap_fee)
+    }
 }
 
 #[cfg(test)]
@@ -319,14 +329,11 @@ mod tests {
         let amount_in: u64 = 1_000_000_000;
 
         // Вычисляем amount_out для свопа base_mint -> quote_mint
-        let amount_out = pool_info.amount_out(&client, amount_in, pool_info.mint_b())
+        // Выходное количество без учета запятой. Она не нужна при расчете арбитража
+        let amount_out = pool_info.amount_out(&client, amount_in, pool_info.mint_a())
             .expect("Failed to calculate amount_out");
 
-        let swap_fee = (amount_in as u128)
-            .checked_mul(pool_info.fees.swap_fee_numerator.into())
-            .unwrap()
-            .checked_ceil_div(pool_info.fees.swap_fee_denominator.into())
-            .unwrap();
+        let swap_fee = pool_info.calc_swap_fee(amount_in).expect("Can't calc swap fee");
 
         println!("\nSwap calculation:");
         println!("  amount_in: {} (base token)", amount_in);
